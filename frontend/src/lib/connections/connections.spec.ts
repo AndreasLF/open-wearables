@@ -62,6 +62,9 @@ describe('historyDelivery', () => {
 		expect(viaSdk(providers, 'oura')).toBe(false);
 		// A provider the list does not have is not assumed to be one.
 		expect(viaSdk(providers, 'garmin')).toBe(false);
+		expect(
+			viaSdk([{ provider: 'hevy', has_cloud_api: false, connect_method: 'api_key' }], 'hevy')
+		).toBe(false);
 	});
 
 	it('only notes a limit when the provider imposes one', () => {

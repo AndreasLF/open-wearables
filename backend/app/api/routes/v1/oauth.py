@@ -9,8 +9,9 @@ from app.config import settings
 from app.constants.provider_urls import from_url_slug
 from app.database import DbSession
 from app.integrations.celery.tasks import start_garmin_full_backfill, sync_vendor_data
+from app.schemas.auth import ConnectMethod
 from app.schemas.enums import ProviderName
-from app.schemas.model_crud.credentials import AuthorizationURLResponse
+from app.schemas.model_crud.credentials import ApiKeyConnectRequest, ApiKeyConnectResponse, AuthorizationURLResponse
 from app.schemas.model_crud.data_priority import (
     BulkProviderSettingsUpdate,
     ProviderSettingRead,
@@ -20,6 +21,7 @@ from app.services import DeveloperDep, user_connection_service
 from app.services.provider_settings_service import provider_settings_service
 from app.services.providers.base_strategy import BaseProviderStrategy
 from app.services.providers.factory import ProviderFactory
+from app.services.providers.hevy.connect import connect_api_key
 
 router = APIRouter()
 factory = ProviderFactory()
@@ -43,6 +45,29 @@ def get_oauth_strategy(provider: ProviderName) -> BaseProviderStrategy:
             detail=f"Provider '{provider.value}' does not support OAuth",
         )
     return strategy
+
+
+@router.post(
+    "/{provider}/api-key",
+    summary="Connect a provider with an API key",
+    tags=["External: Providers"],
+)
+def connect_provider_api_key(provider: str, body: ApiKeyConnectRequest, db: DbSession) -> ApiKeyConnectResponse:
+    """Store a pasted API key for a provider that has no OAuth consent screen.
+
+    Public, like the authorize endpoint: the pairing link is the only credential,
+    and it already names the user. The key is checked with the provider before it
+    is stored, and it is not returned.
+    """
+    provider_name = resolve_provider(provider)
+    strategy = factory.get_provider(provider_name.value)
+    if strategy.connect_method is not ConnectMethod.API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Provider '{provider_name.value}' does not accept an API key",
+        )
+    connect_api_key(db, body.user_id, body.api_key)
+    return ApiKeyConnectResponse(provider=provider_name.value)
 
 
 @router.get(

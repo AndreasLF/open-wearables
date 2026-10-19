@@ -16,7 +16,7 @@ from app.tools.menstrual_cycles import get_menstrual_cycles
 from app.tools.sleep import get_sleep_summary
 from app.tools.timeseries import get_timeseries
 from app.tools.users import get_users
-from app.tools.workouts import get_workout_events
+from app.tools.workouts import exercises_from_segments, get_workout_events
 
 USER_ID = "00000000-0000-0000-0000-000000000000"
 USER_PAYLOAD = {
@@ -298,3 +298,72 @@ async def test_get_menstrual_cycles_handles_empty_data(httpx_mock: HTTPXMock) ->
     assert result["summary"]["avg_cycle_length_days"] is None
     assert result["summary"]["phase_types"] is None
     assert result["summary"]["latest"] is None
+
+
+def test_exercises_from_segments_keeps_logged_set_fields() -> None:
+    exercises = exercises_from_segments(
+        [
+            {
+                "exercise": "Back Squat",
+                "notes": "Belt on",
+                "sets": [
+                    {"type": "normal", "reps": 5, "weight_kg": 140, "rpe": 8, "distance_meters": None},
+                    {"kind": "ignored"},
+                ],
+            },
+            {"kind": "lap", "index": 1},
+        ]
+    )
+
+    assert exercises == [
+        {
+            "name": "Back Squat",
+            "notes": "Belt on",
+            "sets": [{"type": "normal", "reps": 5, "weight_kg": 140, "rpe": 8}],
+        }
+    ]
+
+
+async def test_get_workout_events_returns_exercises(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://api.test.com/api/v1/users/{USER_ID}",
+        json=USER_PAYLOAD,
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            f"https://api.test.com/api/v1/users/{USER_ID}/events/workouts"
+            "?start_date=2026-10-01&end_date=2026-10-19&limit=100&include=segments"
+        ),
+        json={
+            "data": [
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "name": "Leg day",
+                    "type": "strength_training",
+                    "start_time": "2026-10-19T12:00:00Z",
+                    "end_time": "2026-10-19T13:00:00Z",
+                    "duration_seconds": 3600,
+                    "source": {"provider": "hevy"},
+                    "segments": [
+                        {
+                            "exercise": "Back Squat",
+                            "sets": [{"type": "normal", "reps": 5, "weight_kg": 140}],
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+
+    result = await get_workout_events(
+        user_id=USER_ID,
+        start_date="2026-10-01",
+        end_date="2026-10-19",
+    )
+
+    assert result["records"][0]["name"] == "Leg day"
+    assert result["records"][0]["exercises"] == [
+        {"name": "Back Squat", "sets": [{"type": "normal", "reps": 5, "weight_kg": 140}]}
+    ]

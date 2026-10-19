@@ -1,0 +1,36 @@
+---
+title: "Hevy"
+description: "Connect a Hevy workout log with the user's API key. Workouts, sets, and body measurements. No OAuth app to register."
+keywords: ["hevy api", "hevy integration", "hevy workouts", "open wearables hevy"]
+"og:title": "Hevy | Open Wearables"
+"og:description": "Connect Hevy with a per-user API key. Syncs workouts, sets, and body measurements."
+"og:url": "https://docs.openwearables.io/providers/hevy"
+"og:type": "article"
+"twitter:title": "Hevy | Open Wearables"
+"twitter:description": "Connect Hevy with a per-user API key. Syncs workouts, sets, and body measurements."
+"twitter:card": "summary_large_image"
+---
+
+Hevy's public API takes a per-account API key. There is no OAuth application to register, and no webhook. Each person creates a key in Hevy (a Hevy Pro account) at [hevy.com/settings?developer](https://hevy.com/settings?developer) and pastes it on the pairing page.
+
+## What is stored
+
+| Hevy | Open Wearables |
+| --- | --- |
+| Workout title, start, end | Workout `label` and duration |
+| Exercises and sets (`weight_kg`, `reps`, `rpe`, `distance_meters`, `duration_seconds`) | Workout `segments` |
+| Set distance | Workout `distance`, when a set has one |
+| `weight_kg`, `fat_percent`, `lean_mass_kg`, `waist` | Time series `weight`, `body_fat_percentage`, `lean_body_mass`, `waist_circumference` |
+
+Heart rate, steps, calories, and sleep are not in the Hevy workout object, so those fields stay empty. Other circumferences (neck, chest, arms, hips, thighs, calves) have no series type yet.
+
+The workout list leaves segments out until you ask for them:
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/users/{user_id}/events/workouts?start_date=2026-10-01T00:00:00Z&end_date=2026-10-19T23:59:59Z&include=segments" \
+  -H "X-Open-Wearables-API-Key: YOUR_API_KEY"
+```
+
+Each segment is one exercise. `exercise` is the name, `notes` is the exercise note, and `sets` is the list as Hevy sent it: `type` (`warmup`, `normal`, `failure`, `dropset`), `weight_kg`, `reps`, `distance_meters`, `duration_seconds`, and `rpe`. The same list is what an assistant reads when it asks for workouts through the MCP server.
+
+The first sync, and any later historical sync, walks the whole workout log and every body measurement. Hevy has no date filter and no history cap. Later live syncs pull only what is newer than the last sync. A workout already stored is left as it was, so an edit or a delete in Hevy is not applied on the next pull.

@@ -137,6 +137,8 @@ class OpenWearablesClient:
             "start_date": start_date,
             "end_date": end_date,
             "limit": limit,
+            # Strength providers keep reps and weight on the workout's segments.
+            "include": "segments",
         }
         if record_type:
             params["record_type"] = record_type

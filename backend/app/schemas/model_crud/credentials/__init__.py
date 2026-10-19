@@ -12,6 +12,8 @@ from .application import (
     ApplicationUpdate,
 )
 from .oauth import (
+    ApiKeyConnectRequest,
+    ApiKeyConnectResponse,
     AuthorizationURLResponse,
     OAuthState,
     OAuthTokenResponse,
@@ -42,6 +44,8 @@ __all__ = [
     "OAuthTokenResponse",
     "ProviderEndpoints",
     "ProviderCredentials",
+    "ApiKeyConnectRequest",
+    "ApiKeyConnectResponse",
     "AuthorizationURLResponse",
     # UserInvitationCode
     "UserInvitationCodeCreate",

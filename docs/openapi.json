@@ -3824,6 +3824,59 @@
         }
       }
     },
+    "/api/v1/oauth/{provider}/api-key": {
+      "post": {
+        "tags": [
+          "External: Providers"
+        ],
+        "summary": "Connect a provider with an API key",
+        "description": "Store a pasted API key for a provider that has no OAuth consent screen.\n\nPublic, like the authorize endpoint: the pairing link is the only credential,\nand it already names the user. The key is checked with the provider before it\nis stored, and it is not returned.",
+        "operationId": "connect_provider_api_key_api_v1_oauth__provider__api_key_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyConnectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyConnectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/oauth/{provider}/authorize": {
       "get": {
         "tags": [
@@ -11405,6 +11458,47 @@
         "title": "ActivityTotals",
         "description": "The period's daily activity added up: the same days the daily summaries return."
       },
+      "ApiKeyConnectRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "api_key": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Api Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "api_key"
+        ],
+        "title": "ApiKeyConnectRequest",
+        "description": "A provider API key pasted on the pairing page. The key is not an OAuth token."
+      },
+      "ApiKeyConnectResponse": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "connected": {
+            "type": "boolean",
+            "title": "Connected",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "ApiKeyConnectResponse",
+        "description": "The connection was stored. The key itself is never returned."
+      },
       "ApiKeyRead": {
         "properties": {
           "id": {
@@ -12215,6 +12309,16 @@
         ],
         "title": "ConfigResponse",
         "description": "Instance feature flags for the admin panel. Additive-only: append new flags,\nnever remove or repurpose, so the frontend stays backward compatible."
+      },
+      "ConnectMethod": {
+        "type": "string",
+        "enum": [
+          "oauth",
+          "api_key",
+          "sdk"
+        ],
+        "title": "ConnectMethod",
+        "description": "How a person attaches this provider from the pairing page."
       },
       "ConnectionStatus": {
         "type": "string",
@@ -15265,6 +15369,7 @@
           "ultrahuman",
           "sensorbio",
           "withings",
+          "hevy",
           "unknown",
           "internal"
         ],
@@ -15415,6 +15520,10 @@
             "title": "Has Cloud Api",
             "description": "Whether provider uses cloud OAuth API"
           },
+          "connect_method": {
+            "$ref": "#/components/schemas/ConnectMethod",
+            "description": "How a person connects: oauth (redirect), api_key (pasted key), or sdk (mobile app)."
+          },
           "is_enabled": {
             "type": "boolean",
             "title": "Is Enabled",
@@ -15459,6 +15568,7 @@
           "provider",
           "name",
           "has_cloud_api",
+          "connect_method",
           "is_enabled",
           "icon_url"
         ],

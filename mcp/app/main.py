@@ -109,6 +109,13 @@ mcp = FastMCP(
          end_date="2026-01-31", workout_type="running")
       3. Convert distance from km to miles and respond with the total
 
+    Example interaction:
+    User: "What did I squat last session, and for how many reps?"
+    Assistant actions:
+      1. Call get_users() to find the user's ID
+      2. Call get_workout_events for a recent window, workout_type="strength_training"
+      3. Read records[].exercises for the squat, and each set's reps and weight_kg
+
     The API key determines which users you can access (personal, team, or enterprise scope).
     All data is returned in a normalized format regardless of the original wearable provider.
     """,
