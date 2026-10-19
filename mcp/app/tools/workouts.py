@@ -10,6 +10,38 @@ from app.utils import normalize_datetime
 
 logger = logging.getLogger(__name__)
 
+_SET_FIELDS = ("type", "reps", "weight_kg", "distance_meters", "duration_seconds", "rpe")
+
+
+def exercises_from_segments(segments: object) -> list[dict] | None:
+    """Strength exercises stored on a workout. Lap segments are not exercises."""
+    if not isinstance(segments, list):
+        return None
+
+    exercises: list[dict] = []
+    for segment in segments:
+        if not isinstance(segment, dict):
+            continue
+        name = segment.get("exercise")
+        raw_sets = segment.get("sets")
+        if not isinstance(name, str) or not name.strip() or not isinstance(raw_sets, list):
+            continue
+        sets = [
+            {key: one[key] for key in _SET_FIELDS if one.get(key) is not None}
+            for one in raw_sets
+            if isinstance(one, dict)
+        ]
+        sets = [one for one in sets if one]
+        if not sets:
+            continue
+        exercise: dict = {"name": name.strip(), "sets": sets}
+        notes = segment.get("notes")
+        if isinstance(notes, str) and notes.strip():
+            exercise["notes"] = notes.strip()
+        exercises.append(exercise)
+    return exercises or None
+
+
 # Create router for workout-related tools
 workouts_router = FastMCP(name="Workout Tools")
 
@@ -26,6 +58,12 @@ async def get_workout_events(
 
     This tool retrieves discrete workout sessions including type, duration, distance,
     calories, and heart rate data (if available from the wearable device).
+
+    Strength sessions also include exercises. Each exercise has a name and a list of
+    sets. A set can include type (warmup, normal, failure, dropset), reps, weight_kg,
+    distance_meters, duration_seconds, and rpe. Use those fields to answer questions
+    about what was lifted, how many reps, and at what weight. Running and cycling
+    sessions usually have no exercises.
 
     Args:
         user_id: UUID of the user. Use get_users to discover available users.
@@ -62,6 +100,21 @@ async def get_workout_events(
                     "avg_pace_sec_per_km": 360,
                     "elevation_gain_meters": 85.0,
                     "source": "garmin"
+                },
+                {
+                    "id": "uuid-workout-2",
+                    "name": "Leg day",
+                    "type": "strength_training",
+                    "source": "hevy",
+                    "exercises": [
+                        {
+                            "name": "Back Squat",
+                            "sets": [
+                                {"type": "warmup", "reps": 5, "weight_kg": 60},
+                                {"type": "normal", "reps": 5, "weight_kg": 140, "rpe": 8}
+                            ]
+                        }
+                    ]
                 }
             ],
             "summary": {
@@ -85,6 +138,8 @@ async def get_workout_events(
         - The 'source' field indicates which wearable provided the data (garmin, whoop, etc.)
         - Common workout types: running, cycling, swimming, strength_training, walking,
           hiking, yoga, hiit, rowing, elliptical, pilates
+        - For "what did I lift" or "how many reps", read records[].exercises[].sets.
+          weight_kg is kilograms. Sum reps across a set list for a total.
     """
     try:
         # Fetch user details
@@ -132,22 +187,25 @@ async def get_workout_events(
             workout_types[w_type] = workout_types.get(w_type, 0) + 1
 
             source = record.get("source", {})
-            records.append(
-                {
-                    "id": str(record.get("id")),
-                    "type": w_type,
-                    "start_datetime": normalize_datetime(record.get("start_time")),
-                    "end_datetime": normalize_datetime(record.get("end_time")),
-                    "duration_seconds": duration,
-                    "distance_meters": distance,
-                    "calories_kcal": cals,
-                    "avg_heart_rate_bpm": record.get("avg_heart_rate_bpm"),
-                    "max_heart_rate_bpm": record.get("max_heart_rate_bpm"),
-                    "avg_pace_sec_per_km": record.get("avg_pace_sec_per_km"),
-                    "elevation_gain_meters": record.get("elevation_gain_meters"),
-                    "source": source.get("provider") if isinstance(source, dict) else source,
-                }
-            )
+            entry = {
+                "id": str(record.get("id")),
+                "name": record.get("name"),
+                "type": w_type,
+                "start_datetime": normalize_datetime(record.get("start_time")),
+                "end_datetime": normalize_datetime(record.get("end_time")),
+                "duration_seconds": duration,
+                "distance_meters": distance,
+                "calories_kcal": cals,
+                "avg_heart_rate_bpm": record.get("avg_heart_rate_bpm"),
+                "max_heart_rate_bpm": record.get("max_heart_rate_bpm"),
+                "avg_pace_sec_per_km": record.get("avg_pace_sec_per_km"),
+                "elevation_gain_meters": record.get("elevation_gain_meters"),
+                "source": source.get("provider") if isinstance(source, dict) else source,
+            }
+            exercises = exercises_from_segments(record.get("segments"))
+            if exercises:
+                entry["exercises"] = exercises
+            records.append(entry)
 
         # Calculate summary statistics
         total_duration = sum(durations)

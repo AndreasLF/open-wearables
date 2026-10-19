@@ -8,9 +8,20 @@ import type { Provider } from '$lib/server/providers';
 export const byName = <T extends { name: string }>(providers: T[]) =>
 	[...providers].sort((a, b) => a.name.localeCompare(b.name));
 
-/** Fed by the mobile SDK rather than a cloud API. Unknown counts as cloud. */
-export const viaSdk = (providers: Pick<Provider, 'provider' | 'has_cloud_api'>[], slug: string) =>
-	providers.find((entry) => entry.provider === slug)?.has_cloud_api === false;
+/**
+ * Fed by the mobile SDK rather than a cloud API. Unknown counts as cloud.
+ * An API-key provider also has no OAuth client, so `has_cloud_api` is false,
+ * and that alone would mark it as an SDK feed.
+ */
+export const viaSdk = (
+	providers: Pick<Provider, 'provider' | 'has_cloud_api' | 'connect_method'>[],
+	slug: string
+) => {
+	const entry = providers.find((provider) => provider.provider === slug);
+	if (!entry || entry.connect_method === 'api_key') return false;
+	if (entry.connect_method === 'sdk') return true;
+	return entry.has_cloud_api === false;
+};
 
 /** What a provider needs to be shown: its slug, its name and where its logo is. */
 export type ProviderBrand = Pick<Provider, 'provider' | 'name' | 'icon_url'>;

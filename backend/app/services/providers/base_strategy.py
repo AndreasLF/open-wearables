@@ -11,7 +11,7 @@ from app.models import EventRecord, User
 from app.repositories.event_record_repository import EventRecordRepository
 from app.repositories.user_connection_repository import UserConnectionRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import LiveSyncMode
+from app.schemas.auth import ConnectMethod, LiveSyncMode
 from app.schemas.enums import SeriesType
 from app.schemas.enums.health_score_category import HealthScoreCategory
 from app.services.providers.templates.base_247_data import Base247DataTemplate
@@ -255,6 +255,17 @@ class BaseProviderStrategy(ABC):
     def has_cloud_api(self) -> bool:
         """Returns True if provider uses cloud OAuth API."""
         return self.oauth is not None
+
+    @property
+    def connect_method(self) -> ConnectMethod:
+        """How a person connects this provider on the pairing page.
+
+        OAuth providers redirect to the provider. An API-key provider overrides
+        this. Everything else is delivered by the mobile SDK or a file import.
+        """
+        if self.oauth is not None:
+            return ConnectMethod.OAUTH
+        return ConnectMethod.SDK
 
     @property
     def live_sync_configurable(self) -> bool:

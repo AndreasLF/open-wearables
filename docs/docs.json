@@ -62,7 +62,8 @@
             "pages": [
               "providers/supported",
               "providers/coverage",
-              "providers/historical-data"
+              "providers/historical-data",
+              "providers/hevy"
             ]
           },
           {
@@ -225,7 +226,8 @@
             "group": "Providers",
             "pages": [
               "GET /api/v1/oauth/providers",
-              "GET /api/v1/oauth/{provider}/authorize"
+              "GET /api/v1/oauth/{provider}/authorize",
+              "POST /api/v1/oauth/{provider}/api-key"
             ]
           },
           {

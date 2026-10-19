@@ -56,6 +56,7 @@ class ProviderSettingsService:
             provider=provider_key,
             name=strategy.display_name,
             has_cloud_api=strategy.has_cloud_api,
+            connect_method=strategy.connect_method,
             is_enabled=setting.is_enabled if setting else True,
             icon_url=strategy.icon_url,
             live_sync_mode=(
@@ -108,6 +109,7 @@ class ProviderSettingsService:
             provider=provider,
             name=strategy.display_name,
             has_cloud_api=strategy.has_cloud_api,
+            connect_method=strategy.connect_method,
             is_enabled=setting.is_enabled,
             icon_url=strategy.icon_url,
             live_sync_mode=(

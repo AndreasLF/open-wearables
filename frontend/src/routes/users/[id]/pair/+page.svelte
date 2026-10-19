@@ -2,6 +2,7 @@
 	import Unplug from '@lucide/svelte/icons/unplug';
 	import Alert from '$lib/components/ui/Alert.svelte';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import ApiKeyChoice from '$lib/components/pairing/ApiKeyChoice.svelte';
 	import PairingShell from '$lib/components/pairing/PairingShell.svelte';
 	import ProviderChoice from '$lib/components/pairing/ProviderChoice.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -29,7 +30,11 @@
 			</div>
 		{:else}
 			{#each data.providers as provider (provider.provider)}
-				<ProviderChoice {provider} returnUrl={data.returnUrl} />
+				{#if provider.connect_method === 'api_key'}
+					<ApiKeyChoice {provider} returnUrl={data.returnUrl} />
+				{:else}
+					<ProviderChoice {provider} returnUrl={data.returnUrl} />
+				{/if}
 			{/each}
 		{/if}
 	</div>

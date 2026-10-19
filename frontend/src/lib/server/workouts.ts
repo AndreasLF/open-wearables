@@ -27,9 +27,10 @@ export function fetchWorkouts(
 	{ period, provider = '', type = '', cursor = '', limit = 10 }: WorkoutQuery
 ): Promise<WorkoutPage> {
 	const params = filterParams(eventWindow(period, limit), { provider, type });
-	// A card cannot draw zones until it is expanded, but paging again on expand
-	// would be worse than carrying them.
-	params.set('include', 'zones');
+	// A card cannot draw zones or sets until it is expanded, but paging again
+	// on expand would be worse than carrying them.
+	params.append('include', 'zones');
+	params.append('include', 'segments');
 	if (cursor) params.set('cursor', cursor);
 
 	return apiGet<WorkoutPage>(`/api/v1/users/${userId}/events/workouts?${params}`, accessToken);

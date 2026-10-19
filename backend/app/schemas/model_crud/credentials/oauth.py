@@ -59,6 +59,20 @@ class AuthorizationURLResponse(BaseModel):
     state: str
 
 
+class ApiKeyConnectRequest(BaseModel):
+    """A provider API key pasted on the pairing page. The key is not an OAuth token."""
+
+    user_id: UUID
+    api_key: str = Field(min_length=1, max_length=256)
+
+
+class ApiKeyConnectResponse(BaseModel):
+    """The connection was stored. The key itself is never returned."""
+
+    provider: str
+    connected: bool = True
+
+
 class Token(BaseModel):
     """JWT access token response."""
 

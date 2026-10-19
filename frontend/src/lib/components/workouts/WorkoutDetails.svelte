@@ -4,6 +4,7 @@
 	import FieldGroups from '$lib/components/ui/FieldGroups.svelte';
 	import Segmented from '$lib/components/ui/Segmented.svelte';
 	import { formatLocalTime } from '$lib/utils/format';
+	import { strengthExercises } from '$lib/workouts/exercises';
 	import { detailGroups } from '$lib/workouts/fields';
 	import { WORKOUT_TYPES } from '$lib/timeseries/samples';
 	import type { Workout } from '$lib/workouts/types';
@@ -23,6 +24,8 @@
 	const kinds = $derived(zoneKinds(workout));
 	let chosen = $state('');
 	const kind = $derived(kinds.find((entry) => entry.type === chosen) ?? kinds[0]);
+
+	const exercises = $derived(strengthExercises(workout.segments));
 
 	const params = $derived(
 		new URLSearchParams({
@@ -68,13 +71,39 @@
 		</DistributionBar>
 	{/if}
 
+	{#if exercises.length}
+		<div class="flex flex-col gap-3">
+			<Caption>Exercises</Caption>
+			<ol class="flex flex-col gap-4">
+				{#each exercises as exercise, index (index)}
+					<li class="flex flex-col gap-1">
+						<p class="text-sm font-medium text-foreground">{exercise.name}</p>
+						{#if exercise.notes}
+							<p class="text-xs text-muted-foreground">{exercise.notes}</p>
+						{/if}
+						<ol class="flex flex-col">
+							{#each exercise.sets as set, setIndex (setIndex)}
+								<li class="flex items-baseline justify-between gap-3 py-0.5">
+									<span class="text-xs text-muted-foreground tabular-nums">{set.label}</span>
+									<span class="text-sm text-foreground tabular-nums">{set.detail}</span>
+								</li>
+							{/each}
+						</ol>
+					</li>
+				{/each}
+			</ol>
+		</div>
+	{/if}
+
 	<FieldGroups groups={detailGroups(workout)} />
 
 	<div class="flex items-center justify-between gap-3 border-t border-border pt-3">
 		<!-- Laps are stored but not drawn yet; saying so beats an empty space that
-		     reads as "this workout has none". -->
+		     reads as "this workout has none". Strength sets are drawn above. -->
 		<span class="text-xs text-muted-foreground">
-			{workout.segments?.length ? `${workout.segments.length} laps recorded` : ''}
+			{exercises.length || !workout.segments?.length
+				? ''
+				: `${workout.segments.length} laps recorded`}
 		</span>
 
 		<DeleteAction label="Delete workout" onclick={ondelete} />

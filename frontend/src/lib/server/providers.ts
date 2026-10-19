@@ -6,6 +6,8 @@ export type Provider = {
 	provider: string;
 	name: string;
 	has_cloud_api: boolean;
+	/** oauth redirects away; api_key is pasted on the pairing page; sdk never appears there. */
+	connect_method?: 'oauth' | 'api_key' | 'sdk';
 	is_enabled: boolean;
 	/** Relative to the API base; a static file, so the browser fetches it directly. */
 	icon_url: string;
@@ -31,6 +33,9 @@ export const forgetProviders = () => forget(KEY);
 export const fetchProviders = async (accessToken: string) =>
 	(await fetchAllProviders(accessToken)).filter((provider) => provider.is_enabled);
 
-/** What the pairing page offers: enabled, and reached through a cloud OAuth flow. */
+/** What the pairing page offers: enabled OAuth providers, plus API-key providers. */
 export const fetchCloudProviders = async () =>
-	(await fetchAllProviders()).filter((provider) => provider.is_enabled && provider.has_cloud_api);
+	(await fetchAllProviders()).filter(
+		(provider) =>
+			provider.is_enabled && (provider.has_cloud_api || provider.connect_method === 'api_key')
+	);

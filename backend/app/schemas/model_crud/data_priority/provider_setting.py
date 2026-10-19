@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 
-from app.schemas.auth import LiveSyncMode
+from app.schemas.auth import ConnectMethod, LiveSyncMode
 from app.schemas.enums import DataGranularity
 
 
@@ -10,6 +10,10 @@ class ProviderSettingRead(BaseModel):
     provider: str = Field(..., description="Provider identifier (e.g., 'apple', 'garmin')")
     name: str = Field(..., description="Display name (e.g., 'Apple Health', 'Garmin')")
     has_cloud_api: bool = Field(..., description="Whether provider uses cloud OAuth API")
+    connect_method: ConnectMethod = Field(
+        ...,
+        description="How a person connects: oauth (redirect), api_key (pasted key), or sdk (mobile app).",
+    )
     is_enabled: bool = Field(..., description="Whether provider is enabled by admin")
     icon_url: str = Field(
         ...,

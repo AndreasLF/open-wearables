@@ -1,6 +1,9 @@
 from .authentication_method import (
     AuthenticationMethod,
 )
+from .connect_method import (
+    ConnectMethod,
+)
 from .connection_status import (
     ConnectionStatus,
 )
@@ -31,6 +34,7 @@ __all__ = [
     "TokenType",
     # Connection status
     "ConnectionStatus",
+    "ConnectMethod",
     # Live sync mode
     "LiveSyncMode",
     # Authentication method
